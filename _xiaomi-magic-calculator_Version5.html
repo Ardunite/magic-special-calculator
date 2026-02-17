@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>小米魔法计算器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #f5f5f7 0%, #e8e8eb 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            padding: 20px;
+        }
+
+        .calculator-wrapper {
+            position: relative;
+        }
+
+        .calculator-container {
+            background: #000000;
+            border-radius: 50px;
+            padding: 16px;
+            width: 100%;
+            max-width: 350px;
+            box-shadow: 
+                0 0 0 1px rgba(0, 0, 0, 0.1),
+                0 30px 60px rgba(0, 0, 0, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 右上角指示灯 */
+        .lock-indicator {
+            position: absolute;
+            top: 32px;
+            right: 24px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: #5a5a5a;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 10;
+        }
+
+        .lock-indicator.active {
+            background: #ff3b30;
+            box-shadow: 0 0 10px rgba(255, 59, 48, 0.8);
+            animation: pulse-light 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        @keyframes pulse-light {
+            0%, 100% { 
+                opacity: 1;
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.7;
+                transform: scale(0.9);
+            }
+        }
+
+        .display-container {
+            background: #000000;
+            border-radius: 16px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            min-height: 100px;
+        }
+
+        .display-operator {
+            color: #999999;
+            font-size: 18px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            text-align: right;
+            min-height: 24px;
+        }
+
+        .display {
+            color: #ffffff;
+            font-size: 56px;
+            text-align: right;
+            word-wrap: break-word;
+            word-break: break-all;
+            font-weight: 300;
+            letter-spacing: 0.5px;
+            transition: all 0.2s ease;
+            position: relative;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 12px;
+            position: relative;
+            z-index: 2;
+        }
+
+        button {
+            background: #333333;
+            color: #ffffff;
+            border: none;
+            border-radius: 16px;
+            padding: 20px 12px;
+            font-size: 24px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s cubic-bezier(0.4, 0, 0.2, 1);
+            touch-action: manipulation;
+            user-select: none;
+            box-shadow: none;
+            position: relative;
+            overflow: hidden;
+        }
+
+        button:hover {
+            background: #424242;
+            transform: scale(1.05);
+        }
+
+        button:active {
+            background: #4a4a4a;
+            transform: scale(0.96);
+        }
+
+        button.operator {
+            background: #ff9500;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        button.operator:hover {
+            background: #ffaa2c;
+            transform: scale(1.05);
+        }
+
+        button.operator:active {
+            background: #ff8c00;
+            transform: scale(0.96);
+        }
+
+        button.equals {
+            background: #00c851;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        button.equals:hover {
+            background: #1abc4c;
+            transform: scale(1.05);
+        }
+
+        button.equals:active {
+            background: #00a84f;
+            transform: scale(0.96);
+        }
+
+        button.delete {
+            background: #ff3b30;
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 600;
+        }
+
+        button.delete:hover {
+            background: #ff5544;
+            transform: scale(1.05);
+        }
+
+        button.delete:active {
+            background: #ff2929;
+            transform: scale(0.96);
+        }
+
+        button.clear {
+            background: #505050;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        button.clear:hover {
+            background: #606060;
+            transform: scale(1.05);
+        }
+
+        button.clear:active {
+            background: #404040;
+            transform: scale(0.96);
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 480px) {
+            .calculator-container {
+                padding: 12px;
+                border-radius: 40px;
+            }
+
+            .lock-indicator {
+                width: 8px;
+                height: 8px;
+                top: 28px;
+                right: 20px;
+            }
+
+            .display-container {
+                border-radius: 14px;
+                padding: 14px;
+                margin-bottom: 12px;
+                min-height: 85px;
+            }
+
+            .display-operator {
+                font-size: 16px;
+                margin-bottom: 6px;
+            }
+
+            .display {
+                font-size: 48px;
+            }
+
+            button {
+                padding: 18px 10px;
+                font-size: 20px;
+                border-radius: 14px;
+            }
+
+            .buttons-grid {
+                gap: 10px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .calculator-container {
+                max-width: 100%;
+                padding: 10px;
+            }
+
+            button {
+                padding: 16px 8px;
+                font-size: 18px;
+            }
+
+            .display-container {
+                min-height: 75px;
+                padding: 12px;
+            }
+
+            .display {
+                font-size: 40px;
+            }
+
+            .buttons-grid {
+                gap: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="calculator-wrapper">
+        <div class="calculator-container">
+            <!-- 右上角指示灯 -->
+            <div class="lock-indicator" id="lockIndicator"></div>
+            
+            <!-- 显示屏 -->
+            <div class="display-container">
+                <div class="display-operator" id="displayOperator"></div>
+                <div class="display" id="display">0</div>
+            </div>
+            
+            <!-- 按钮网格 -->
+            <div class="buttons-grid">
+                <!-- 第一行 -->
+                <button class="clear" onclick="calculator.clear()">AC</button>
+                <button class="delete" onclick="calculator.backspace()">⌫</button>
+                <button class="operator" onclick="calculator.toggleSign()">+/−</button>
+                <button class="operator" onclick="calculator.setOperator('÷')">÷</button>
+
+                <!-- 第二行 -->
+                <button onclick="calculator.appendNumber('7')">7</button>
+                <button onclick="calculator.appendNumber('8')">8</button>
+                <button onclick="calculator.appendNumber('9')">9</button>
+                <button class="operator" onclick="calculator.setOperator('×')">×</button>
+
+                <!-- 第三行 -->
+                <button onclick="calculator.appendNumber('4')">4</button>
+                <button onclick="calculator.appendNumber('5')">5</button>
+                <button onclick="calculator.appendNumber('6')">6</button>
+                <button class="operator" onclick="calculator.setOperator('-')">−</button>
+
+                <!-- 第四行 -->
+                <button onclick="calculator.appendNumber('1')">1</button>
+                <button onclick="calculator.appendNumber('2')">2</button>
+                <button onclick="calculator.appendNumber('3')">3</button>
+                <button class="operator" onclick="calculator.setOperator('+')">+</button>
+
+                <!-- 第五行 -->
+                <button onclick="calculator.appendNumber('0')" style="grid-column: span 2;">0</button>
+                <button onclick="calculator.appendDecimal()">.</button>
+                <button class="equals" onclick="calculator.equals()">=</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const calculator = {
+            display: document.getElementById('display'),
+            displayOperator: document.getElementById('displayOperator'),
+            lockIndicator: document.getElementById('lockIndicator'),
+            
+            // 状态变量
+            currentValue: '0',
+            previousValue: '',
+            operator: null,
+            waitingForOperand: false,
+            isLocked: false,
+            equalsCount: 0,
+            lastEqualsTime: 0,
+            lockedValue: 0,
+
+            // 更新显示
+            updateDisplay() {
+                this.display.textContent = this.currentValue;
+                
+                // 显示运算符
+                if (this.operator) {
+                    let operatorDisplay = this.operator;
+                    if (this.operator === '×') {
+                        operatorDisplay = '×';
+                    } else if (this.operator === '÷') {
+                        operatorDisplay = '÷';
+                    } else if (this.operator === '-') {
+                        operatorDisplay = '−';
+                    }
+                    this.displayOperator.textContent = `${this.previousValue} ${operatorDisplay}`;
+                } else {
+                    this.displayOperator.textContent = '';
+                }
+                
+                this.lockIndicator.classList.toggle('active', this.isLocked);
+            },
+
+            // 添加数字
+            appendNumber(num) {
+                if (this.isLocked) {
+                    // 锁定状态：正常显示输入，但不执行计算
+                    if (this.currentValue === '0' && num !== '0') {
+                        this.currentValue = num;
+                    } else if (this.currentValue !== '0') {
+                        this.currentValue += num;
+                    } else if (num === '0') {
+                        this.currentValue = '0';
+                    }
+                    this.updateDisplay();
+                    return;
+                }
+
+                if (this.waitingForOperand) {
+                    this.currentValue = num;
+                    this.waitingForOperand = false;
+                } else {
+                    this.currentValue = this.currentValue === '0' ? num : this.currentValue + num;
+                }
+                this.updateDisplay();
+            },
+
+            // 添加小数点
+            appendDecimal() {
+                if (this.isLocked) {
+                    if (!this.currentValue.includes('.')) {
+                        this.currentValue += '.';
+                    }
+                    this.updateDisplay();
+                    return;
+                }
+
+                if (this.waitingForOperand) {
+                    this.currentValue = '0.';
+                    this.waitingForOperand = false;
+                } else if (!this.currentValue.includes('.')) {
+                    this.currentValue += '.';
+                }
+                this.updateDisplay();
+            },
+
+            // 切换符号
+            toggleSign() {
+                if (this.isLocked) {
+                    const num = parseFloat(this.currentValue);
+                    this.currentValue = String(-num);
+                    this.updateDisplay();
+                    return;
+                }
+
+                const num = parseFloat(this.currentValue);
+                this.currentValue = String(-num);
+                this.updateDisplay();
+            },
+
+            // 退格
+            backspace() {
+                if (this.isLocked) {
+                    if (this.currentValue.length > 1) {
+                        this.currentValue = this.currentValue.slice(0, -1);
+                    } else {
+                        this.currentValue = '0';
+                    }
+                    this.updateDisplay();
+                    return;
+                }
+
+                if (this.currentValue.length > 1) {
+                    this.currentValue = this.currentValue.slice(0, -1);
+                } else {
+                    this.currentValue = '0';
+                }
+                this.updateDisplay();
+            },
+
+            // 清除
+            clear() {
+                this.currentValue = '0';
+                this.previousValue = '';
+                this.operator = null;
+                this.waitingForOperand = false;
+                this.equalsCount = 0;
+                this.isLocked = false;
+                this.updateDisplay();
+            },
+
+            // 设置运算符
+            setOperator(op) {
+                if (this.isLocked) {
+                    return;
+                }
+
+                if (this.operator !== null && !this.waitingForOperand) {
+                    this.calculate();
+                }
+
+                this.previousValue = this.currentValue;
+                this.operator = op;
+                this.waitingForOperand = true;
+                this.equalsCount = 0;
+                this.updateDisplay();
+            },
+
+            // 计算
+            calculate() {
+                if (this.operator === null || this.previousValue === '') {
+                    return;
+                }
+
+                const prev = parseFloat(this.previousValue);
+                const current = parseFloat(this.currentValue);
+                let result = 0;
+
+                switch (this.operator) {
+                    case '+':
+                        result = prev + current;
+                        break;
+                    case '-':
+                        result = prev - current;
+                        break;
+                    case '×':
+                        result = prev * current;
+                        break;
+                    case '÷':
+                        result = current !== 0 ? prev / current : 0;
+                        break;
+                    default:
+                        return;
+                }
+
+                this.currentValue = String(result);
+                this.operator = null;
+                this.previousValue = '';
+                this.waitingForOperand = true;
+            },
+
+            // 等号按钮
+            equals() {
+                if (this.isLocked) {
+                    const now = Date.now();
+                    
+                    if (now - this.lastEqualsTime > 500) {
+                        this.equalsCount = 1;
+                    } else {
+                        this.equalsCount++;
+                    }
+                    this.lastEqualsTime = now;
+
+                    if (this.equalsCount === 3) {
+                        this.unlockWithMagic();
+                        this.equalsCount = 0;
+                    }
+                    return;
+                }
+
+                const now = Date.now();
+                
+                if (now - this.lastEqualsTime > 500) {
+                    this.equalsCount = 1;
+                } else {
+                    this.equalsCount++;
+                }
+                this.lastEqualsTime = now;
+
+                if (this.equalsCount === 3) {
+                    this.lockCalculator();
+                    this.equalsCount = 0;
+                    return;
+                }
+
+                if (this.operator !== null) {
+                    this.calculate();
+                    this.waitingForOperand = true;
+                }
+
+                this.updateDisplay();
+            },
+
+            // 进入锁定状态
+            lockCalculator() {
+                this.isLocked = true;
+                this.lockedValue = parseFloat(this.currentValue);
+                this.equalsCount = 0;
+                this.operator = null;
+                this.waitingForOperand = true;
+                this.currentValue = '0';
+                this.updateDisplay();
+            },
+
+            // 解除锁定并触发魔法计算
+            unlockWithMagic() {
+                const now = new Date();
+                const month = String(now.getMonth() + 1).padStart(2, '0');
+                const date = String(now.getDate()).padStart(2, '0');
+                const hour = String(now.getHours()).padStart(2, '0');
+                const minute = String(now.getMinutes()).padStart(2, '0');
+
+                const magicNumber = parseInt(month + date + hour + minute);
+                const result = magicNumber - this.lockedValue;
+
+                this.isLocked = false;
+                this.currentValue = String(result);
+                this.operator = null;
+                this.previousValue = '';
+                this.waitingForOperand = true;
+                this.equalsCount = 0;
+                this.updateDisplay();
+            }
+        };
+
+        calculator.updateDisplay();
+
+        // 键盘支持
+        document.addEventListener('keydown', (e) => {
+            const key = e.key;
+            
+            if (key >= '0' && key <= '9') {
+                calculator.appendNumber(key);
+            } else if (key === '.') {
+                calculator.appendDecimal();
+            } else if (key === '+' || key === '-') {
+                calculator.setOperator(key);
+            } else if (key === '*') {
+                calculator.setOperator('×');
+            } else if (key === '/') {
+                e.preventDefault();
+                calculator.setOperator('÷');
+            } else if (key === 'Enter' || key === '=') {
+                e.preventDefault();
+                calculator.equals();
+            } else if (key === 'Backspace') {
+                calculator.backspace();
+            } else if (key === 'Escape') {
+                calculator.clear();
+            }
+        });
+    </script>
+</body>
+</html>
